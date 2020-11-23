@@ -37,7 +37,7 @@ export class UserController {
   ): Promise<ApiResponse> {
     const changedUser = await this.userService.changeInfo(user, changeInfoDto);
     return ApiResponse.createSuccessApiResponse(
-      '인증번호가 전송되었습니다.',
+      '정보가 변경되었습니다.',
       changedUser,
     );
   }

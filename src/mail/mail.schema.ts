@@ -1,30 +1,24 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { prop } from '@typegoose/typegoose';
 
-@Schema({
-  timestamps: true,
-})
-export class Mail extends Document {
-  @Prop()
+export class Mail {
+  @prop({ required: true })
   subject: string;
 
-  @Prop()
+  @prop({ required: true })
   template: string;
 
-  @Prop()
+  @prop({ required: true })
   context: any;
 
-  @Prop()
+  @prop()
   toName: string;
 
-  @Prop()
+  @prop({ required: true })
   toEmail: string;
 
-  @Prop()
+  @prop({ required: true })
   fromName: string;
 
-  @Prop()
+  @prop({ required: true })
   fromEmail: string;
 }
-
-export const MailSchema = SchemaFactory.createForClass(Mail);

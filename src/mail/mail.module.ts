@@ -2,9 +2,9 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypegooseModule } from 'nestjs-typegoose';
 import { envFilePath } from '../config';
-import { MailSchema } from './mail.schema';
+import { Mail } from './mail.schema';
 import { MailService } from './mail.service';
 
 @Module({
@@ -33,8 +33,13 @@ import { MailService } from './mail.service';
         },
       },
     }),
-    MongooseModule.forFeature([
-      { name: 'mails', schema: MailSchema, collection: 'mails' },
+    TypegooseModule.forFeature([
+      {
+        typegooseClass: Mail,
+        schemaOptions: {
+          timestamps: true,
+        },
+      },
     ]),
   ],
   providers: [MailService],

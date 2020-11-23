@@ -1,6 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppLoggerMiddleware } from './middleware/AppLoggerMiddleware';
@@ -8,11 +7,16 @@ import { MailModule } from './mail/mail.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { envFilePath } from './config';
+import { TypegooseModule } from 'nestjs-typegoose';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath }),
-    MongooseModule.forRoot(process.env.DB_URL),
+    TypegooseModule.forRoot(process.env.DB_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      useCreateIndex: true,
+    }),
     AuthModule,
     UserModule,
     MailModule,

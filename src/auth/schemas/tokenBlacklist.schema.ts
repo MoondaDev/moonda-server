@@ -1,14 +1,6 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { prop } from '@typegoose/typegoose';
 
-@Schema({
-  timestamps: true,
-})
-export class Tokenblacklist extends Document {
-  @Prop()
+export class Tokenblacklist {
+  @prop({ required: true })
   token: string;
 }
-
-export const TokenblacklistSchema = SchemaFactory.createForClass(
-  Tokenblacklist,
-);

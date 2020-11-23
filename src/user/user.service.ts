@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ReturnModelType } from '@typegoose/typegoose';
+import { InjectModel } from 'nestjs-typegoose';
 import { comparePassword, hashPassword } from '../util/crypto';
 import { CustomException } from '../util/http';
 import { ChangeInfoDto } from './dto/change-info.dto';
@@ -9,31 +9,42 @@ import { User } from './schemas/user.schema';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel('users') private readonly userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User)
+    private readonly userModel: ReturnModelType<typeof User>,
+  ) {}
 
   async findAll(): Promise<User[]> {
-    return await this.userModel.find().exec();
+    return await this.userModel.find();
   }
 
   async findByEmail(email: string | RegExp): Promise<User> {
-    return await this.userModel
-      .findOne({
-        email,
-      })
-      .exec();
+    return await this.userModel.findByEmail(email);
+  }
+
+  async getByEmail(email: string | RegExp): Promise<User> {
+    const user = await this.userModel.findByEmail(email);
+    if (!user) {
+      throw new HttpException(
+        new CustomException('등록되지 않은 이메일입니다.'),
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    return user;
   }
 
   async existsByEmail(email: string): Promise<boolean> {
-    const user = await this.findByEmail(email);
-    if (user) {
-      return true;
-    }
-    return false;
+    return await this.userModel.existsByEmail(email);
   }
 
-  async save(userDto: any): Promise<User> {
-    const user = new this.userModel(userDto);
-    return user.save();
+  async create(user: any): Promise<User> {
+    const createdUser = new this.userModel(user);
+    return await createdUser.save();
+  }
+
+  async save(user: User): Promise<User> {
+    const savedUser = new this.userModel(user);
+    return await savedUser.save();
   }
 
   async changeInfo(user: User, changeInfoDto: ChangeInfoDto): Promise<User> {

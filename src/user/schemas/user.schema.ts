@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { mongoose, prop } from '@typegoose/typegoose';
+import { ModelType } from '@typegoose/typegoose/lib/types';
+import { isEmail } from 'class-validator';
 import { CustomException } from 'src/util/http';
 
 export enum AuthType {
@@ -9,48 +10,35 @@ export enum AuthType {
   'facebook' = 'facebook',
 }
 
-@Schema({
-  timestamps: true,
-})
-export class User extends Document {
-  @Prop()
+export class User {
+  _id?: mongoose.Types.ObjectId;
+
+  @prop({
+    validate: {
+      validator: (val) => isEmail(val),
+      message: `{VALUE} is not a valid email`,
+    },
+    unique: true,
+  })
   email: string;
 
-  @Prop()
+  @prop({ required: true })
   password: string;
 
-  @Prop()
+  @prop({ required: true })
   name: string;
 
-  @Prop()
+  @prop({ required: true })
   phone: string;
 
-  @Prop()
+  @prop({ required: true })
   authType: AuthType;
 
-  @Prop()
+  @prop({ required: true })
   isExit: boolean;
 
-  @Prop()
+  @prop()
   exitReason: string;
-
-  validateUserSignup() {
-    if (!this) {
-      throw new HttpException(
-        new CustomException('등록되지 않은 이메일입니다.'),
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-  }
-
-  validateUserAlreadySignup() {
-    if (this) {
-      throw new HttpException(
-        new CustomException('이미 가입된 이메일입니다.'),
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-  }
 
   validateAuthType(authType: AuthType) {
     if (this.authType !== authType) {
@@ -63,7 +51,7 @@ export class User extends Document {
     }
   }
 
-  validateUserExit(): void {
+  validateUserExit() {
     if (this.isExit) {
       throw new HttpException(
         new CustomException('탈퇴된 계정입니다. 다른 계정을 이용해주세요.'),
@@ -71,6 +59,32 @@ export class User extends Document {
       );
     }
   }
-}
 
-export const UserSchema = SchemaFactory.createForClass(User);
+  validateSnsRegistered() {
+    if (this.authType !== AuthType.email) {
+      throw new HttpException(
+        new CustomException(
+          `해당 이메일은 SNS 로그인으로 가입되어 있어 비밀번호를 찾을 수 없습니다.`,
+        ),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  static async findByEmail(
+    this: ModelType<User> & typeof User,
+    email: string | RegExp,
+  ): Promise<User> {
+    return await this.findOne({
+      email,
+    }).exec();
+  }
+
+  static async existsByEmail(
+    this: ModelType<User> & typeof User,
+    email: string | RegExp,
+  ): Promise<boolean> {
+    const user = await this.findByEmail(email);
+    return user ? true : false;
+  }
+}

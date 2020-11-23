@@ -1,13 +1,14 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ReturnModelType } from '@typegoose/typegoose';
+import { InjectModel } from 'nestjs-typegoose';
 import { Mail } from '../mail/mail.schema';
 
 @Injectable()
 export class MailService {
   constructor(
-    @InjectModel('mails') private readonly mailModel: Model<Mail>,
+    @InjectModel(Mail)
+    private readonly mailModel: ReturnModelType<typeof Mail>,
     private readonly mailerService: MailerService,
   ) {}
 

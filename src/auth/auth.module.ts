@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AppService } from '../app.service';
-import { VerificationSchema } from './schemas/verification.schema';
+import { Verification } from './schemas/verification.schema';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport';
@@ -10,8 +9,9 @@ import { LocalStrategy } from './guard/local.strategy';
 import { JwtStrategy } from './guard/jwt.strategy';
 import { jwtConstants } from './constants';
 import { UserModule } from '../user/user.module';
-import { TokenblacklistSchema } from './schemas/tokenblacklist.schema';
 import { MailModule } from '../mail/mail.module';
+import { TypegooseModule } from 'nestjs-typegoose';
+import { Tokenblacklist } from './schemas/tokenblacklist.schema';
 
 @Module({
   imports: [
@@ -19,16 +19,18 @@ import { MailModule } from '../mail/mail.module';
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '7d' },
     }),
-    MongooseModule.forFeature([
+    TypegooseModule.forFeature([
       {
-        name: 'verifications',
-        schema: VerificationSchema,
-        collection: 'verifications',
+        typegooseClass: Tokenblacklist,
+        schemaOptions: {
+          timestamps: true,
+        },
       },
       {
-        name: 'tokenblacklists',
-        schema: TokenblacklistSchema,
-        collection: 'tokenblacklists',
+        typegooseClass: Verification,
+        schemaOptions: {
+          timestamps: true,
+        },
       },
     ]),
     PassportModule,

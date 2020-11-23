@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { prop } from '@typegoose/typegoose';
 import { CustomException } from 'src/util/http';
 
 export enum VerificationType {
@@ -8,30 +7,37 @@ export enum VerificationType {
   FIND_PASSWORD = 'FIND_PASSWORD',
 }
 
-@Schema({
-  timestamps: true,
-})
-export class Verification extends Document {
-  @Prop()
+export class Verification {
+  @prop({ required: true })
   email: string;
 
-  @Prop()
+  @prop({ required: true })
   verificationCode: number;
 
-  @Prop()
+  @prop({ required: true })
   verificationType: VerificationType;
 
   createdAt: Date;
   updatedAt: Date;
 
-  validateCodeSent() {
-    if (!this) {
+  validateSameCode(verificationCode: number) {
+    if (this.verificationCode != verificationCode) {
       throw new HttpException(
-        new CustomException('인증번호 전송 후 이용해주세요.'),
+        new CustomException('인증번호가 틀렸습니다.'),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  validateExpireTime() {
+    const createdDate = new Date(this.createdAt);
+    const expiredDate = createdDate.setDate(createdDate.getDay() + 1);
+    const nowDate = new Date();
+    if (expiredDate < nowDate.getDate()) {
+      throw new HttpException(
+        new CustomException('인증시간을 초과했습니다.'),
         HttpStatus.BAD_REQUEST,
       );
     }
   }
 }
-
-export const VerificationSchema = SchemaFactory.createForClass(Verification);

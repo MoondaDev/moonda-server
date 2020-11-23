@@ -1,7 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
-import { Model } from 'mongoose';
 import axios from 'axios';
 import {
   Verification,
@@ -19,14 +17,18 @@ import { FindPasswordDto } from './dto/find-password.dto';
 import { MailService } from '../mail/mail.service';
 import { Request } from 'express';
 import { FIND_PASSWORD_TEMPLATE, SIGNUP_TEMPLATE } from '../util/mail.template';
+import { ReturnModelType } from '@typegoose/typegoose';
+import { InjectModel } from 'nestjs-typegoose';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel('verifications')
-    private readonly verificaionModel: Model<Verification>,
-    @InjectModel('tokenblacklists')
-    private readonly tokenblacklistModel: Model<Tokenblacklist>,
+    @InjectModel(Verification)
+    private readonly verificaionModel: ReturnModelType<typeof Verification>,
+    @InjectModel(Tokenblacklist)
+    private readonly tokenblacklistModel: ReturnModelType<
+      typeof Tokenblacklist
+    >,
     private readonly userService: UserService,
     private readonly mailService: MailService,
     private readonly jwtService: JwtService,
@@ -41,7 +43,7 @@ export class AuthService {
   }
 
   login(user: User): string {
-    const payload = { email: user.email, sub: user.id };
+    const payload = { email: user.email, sub: user._id };
     return this.jwtService.sign(payload);
   }
 
@@ -50,9 +52,7 @@ export class AuthService {
   ): Promise<{ user: User; accessToken: string }> {
     const data = await this.requestGoogleOAuth(snsLoginDto.accessToken);
 
-    const user = await this.userService.findByEmail(data.email);
-
-    user.validateUserSignup();
+    const user = await this.userService.getByEmail(data.email);
 
     user.validateAuthType(AuthType.google);
 
@@ -76,9 +76,7 @@ export class AuthService {
   ): Promise<{ user: User; accessToken: string }> {
     const data = await this.requestFacebookOAuth(snsLogin.accessToken);
 
-    const user = await this.userService.findByEmail(data.email);
-
-    user.validateUserSignup();
+    const user = await this.userService.getByEmail(data.email);
 
     user.validateAuthType(AuthType.facebook);
 
@@ -98,8 +96,7 @@ export class AuthService {
   }
 
   async emailSignup(emailSignup: EmailSignupDto): Promise<User> {
-    const user = await this.userService.findByEmail(emailSignup.email);
-    user.validateUserAlreadySignup();
+    this.validateUserAlreadyRegisterd(emailSignup.email);
 
     await this.verifyEmail(
       emailSignup.email,
@@ -115,15 +112,23 @@ export class AuthService {
       authType: 'email',
     };
 
-    return this.userService.save(userDto);
+    return this.userService.create(userDto);
+  }
+
+  async validateUserAlreadyRegisterd(email: string) {
+    const user = await this.userService.findByEmail(email);
+    if (user) {
+      throw new HttpException(
+        new CustomException('이미 가입된 이메일입니다.'),
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
   }
 
   async googleSignup(snsSignup: SnsSignupDto): Promise<any> {
     const data = await this.requestGoogleOAuth(snsSignup.accessToken);
 
-    const user = await this.userService.findByEmail(data.email);
-
-    user.validateUserAlreadySignup();
+    this.validateUserAlreadyRegisterd(data.email);
 
     const userDto = {
       email: data.email,
@@ -133,15 +138,13 @@ export class AuthService {
       isExit: false,
     };
 
-    return await this.userService.save(userDto);
+    return await this.userService.create(userDto);
   }
 
   async facebookSignup(snsSignup: SnsSignupDto): Promise<any> {
     const data = await this.requestFacebookOAuth(snsSignup.accessToken);
 
-    const user = await this.userService.findByEmail(data.email);
-
-    user.validateUserAlreadySignup();
+    this.validateUserAlreadyRegisterd(data.email);
 
     const userDto = {
       email: data.email,
@@ -150,7 +153,7 @@ export class AuthService {
       isExit: false,
     };
 
-    return await this.userService.save(userDto);
+    return await this.userService.create(userDto);
   }
 
   async sendVerificationCodeForSignup(email: string): Promise<Verification> {
@@ -264,22 +267,9 @@ export class AuthService {
       );
     }
 
-    const createdDate = new Date(verification.createdAt);
-    const expiredDate = createdDate.setDate(createdDate.getDay() + 1);
-    const nowDate = new Date();
-    if (expiredDate < nowDate.getDate()) {
-      throw new HttpException(
-        new CustomException('인증시간을 초과했습니다.'),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    verification.validateExpireTime();
 
-    if (verificationCode != verification.verificationCode) {
-      throw new HttpException(
-        new CustomException('인증번호가 틀렸습니다.'),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    verification.validateSameCode(verificationCode);
   }
 
   async findOneLatestVerification(
@@ -294,23 +284,13 @@ export class AuthService {
       .sort({ createdAt: -1 })
       .limit(1)
       .exec();
-    console.log(foundVerification);
     return foundVerification;
   }
 
   async findPassword(findPassword: FindPasswordDto): Promise<User> {
-    const user = await this.userService.findByEmail(findPassword.email);
+    const user = await this.userService.getByEmail(findPassword.email);
 
-    user.validateUserSignup();
-
-    if (user.authType !== AuthType.email) {
-      throw new HttpException(
-        new CustomException(
-          `해당 이메일은 SNS 로그인으로 가입되어 있어 비밀번호를 찾을 수 없습니다.`,
-        ),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    user.validateSnsRegistered();
 
     await this.verifyEmail(
       findPassword.email,
@@ -344,7 +324,6 @@ export class AuthService {
     if (findToken) {
       throw new HttpException(
         new CustomException('로그아웃 처리된 토큰입니다. 다시 로그인해주세요.'),
-        // TODO: Forbidden 으로 넘겨도 Http Exception Handler 에선 401 에러로 날라온다. 해결 필요.
         HttpStatus.FORBIDDEN,
       );
     }
