@@ -1,6 +1,6 @@
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework 을 이용해 만든 NestJS Starter 입니다.
+Moonda Server
 
 ## Installation
 
