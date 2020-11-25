@@ -1,3 +1,15 @@
+language: node_js
+node_js:
+  - '14'
+
+env:
+  - PORT=$PORT
+  - DB_URL=$DB_URL
+  - JWT_SECRET_KEY=$JWT_SECRET_KEY
+  - MAIL_HOST=$MAIL_HOST
+  - MAIL_USERNAME=$MAIL_USERNAME
+  - MAIL_PASSWORD=$MAIL_PASSWORD
+
 deploy:
   provider: elasticbeanstalk
   access_key_id:
