@@ -11,7 +11,10 @@ export class EventService {
     private readonly eventOpenModel: ReturnModelType<typeof EventOpen>,
   ) {}
 
-  async saveEventOpen(emailOrPhone: string): Promise<EventOpen> {
+  async saveEventOpen(
+    emailOrPhone: string,
+    expectaionMessage: string,
+  ): Promise<EventOpen> {
     const findEventOpen = await this.findEventOpenByEmailOrPhone(emailOrPhone);
     if (findEventOpen) {
       throw new HttpException(
@@ -22,6 +25,7 @@ export class EventService {
 
     const eventOpen = new this.eventOpenModel();
     eventOpen.emailOrPhone = emailOrPhone;
+    eventOpen.expectaionMessage = expectaionMessage;
     return await eventOpen.save();
   }
 

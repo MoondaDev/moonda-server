@@ -12,7 +12,10 @@ export class EventController {
   async check(
     @Body() saveEventOpenDto: SaveEventOpenDto,
   ): Promise<ApiResponse> {
-    await this.eventService.saveEventOpen(saveEventOpenDto.emailOrPhone);
+    await this.eventService.saveEventOpen(
+      saveEventOpenDto.emailOrPhone,
+      saveEventOpenDto.expectaionMessage,
+    );
     return ApiResponse.createSuccessApiResponse('Event 에 참가되었습니다.');
   }
 }
