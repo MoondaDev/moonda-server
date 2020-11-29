@@ -1,12 +1,5 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  HttpException,
-  HttpStatus,
-  Post,
-} from '@nestjs/common';
-import { ApiResponse, CustomException } from '../util/http';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { ApiResponse } from '../util/http';
 import { EventService } from './event.service';
 import { SaveEventOpenDto } from './dto/save-event.dto';
 
@@ -19,16 +12,7 @@ export class EventController {
   async check(
     @Body() saveEventOpenDto: SaveEventOpenDto,
   ): Promise<ApiResponse> {
-    if (!saveEventOpenDto.email && !saveEventOpenDto.phone) {
-      throw new HttpException(
-        new CustomException('이메일 혹은 전화번호를 기입해주세요.'),
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    await this.eventService.saveEventOpen(
-      saveEventOpenDto.email,
-      saveEventOpenDto.phone,
-    );
+    await this.eventService.saveEventOpen(saveEventOpenDto.emailOrPhone);
     return ApiResponse.createSuccessApiResponse('Event 에 참가되었습니다.');
   }
 }

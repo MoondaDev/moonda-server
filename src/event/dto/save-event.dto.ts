@@ -1,5 +1,6 @@
-export class SaveEventOpenDto {
-  readonly email: string;
+import { IsNotEmpty } from 'class-validator';
 
-  readonly phone: string;
+export class SaveEventOpenDto {
+  @IsNotEmpty()
+  readonly emailOrPhone: string;
 }

@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { envFilePath } from './config';
 import { TypegooseModule } from 'nestjs-typegoose';
+import { EventModule } from './event/event.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TypegooseModule } from 'nestjs-typegoose';
     AuthModule,
     UserModule,
     MailModule,
+    EventModule,
   ],
   controllers: [AppController],
   providers: [AppService],

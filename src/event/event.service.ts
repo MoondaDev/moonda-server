@@ -11,38 +11,24 @@ export class EventService {
     private readonly eventOpenModel: ReturnModelType<typeof EventOpen>,
   ) {}
 
-  async saveEventOpen(email: string, phone: string): Promise<EventOpen> {
-    if (email) {
-      const eventOpen = await this.findEventOpenByEmail(email);
-      if (eventOpen) {
-        throw new HttpException(
-          new CustomException('이미 이벤트 등록된 이메일입니다.'),
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    } else if (phone) {
-      const eventOpen = await this.findEventOpenByPhone(phone);
-      if (eventOpen) {
-        throw new HttpException(
-          new CustomException('이미 이벤트 등록된 전화번호입니다.'),
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+  async saveEventOpen(emailOrPhone: string): Promise<EventOpen> {
+    const findEventOpen = await this.findEventOpenByEmailOrPhone(emailOrPhone);
+    if (findEventOpen) {
+      throw new HttpException(
+        new CustomException('이미 이벤트에 등록된 연락수단입니다.'),
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const eventOpen = new this.eventOpenModel();
-    eventOpen.email = email;
-    eventOpen.phone = phone;
+    eventOpen.emailOrPhone = emailOrPhone;
     return await eventOpen.save();
   }
 
-  async findEventOpenByEmail(email: string): Promise<EventOpen> {
-    const eventOpen = await this.eventOpenModel.findOne({ email }).exec();
-    return eventOpen;
-  }
-
-  async findEventOpenByPhone(phone: string): Promise<EventOpen> {
-    const eventOpen = await this.eventOpenModel.findOne({ phone }).exec();
+  async findEventOpenByEmailOrPhone(emailOrPhone: string): Promise<EventOpen> {
+    const eventOpen = await this.eventOpenModel
+      .findOne({ emailOrPhone })
+      .exec();
     return eventOpen;
   }
 }
