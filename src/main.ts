@@ -6,7 +6,14 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './filter/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: (origin, callback) => {
+        return callback(null, true);
+      },
+      credentials: true,
+    },
+  });
 
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
